@@ -20,7 +20,7 @@ It's a dungeon-crawling game ported to 3DS, as one can see in [a discussion](htt
 
 Source files are available, as well as binary files.
 
-Copy the [dsband.3dsx](https://github.com/Stagyrite/openroguelike/releases/download/v0.1/dsband.3dsx) and [dsband.smdh](https://github.com/Stagyrite/openroguelike/releases/download/v0.1/dsband.smdh) files to the target '3ds' directory on a microSD card from your 3DS. A new 'dsband' option should appear in the Homebrew Launcher.
+Copy the [dsband.3dsx](https://github.com/Stagyrite/openroguelike/releases/download/dsband/dsband.3dsx) and [dsband.smdh](https://github.com/Stagyrite/openroguelike/releases/download/dsband/dsband.smdh) files to the target '3ds' directory on a microSD card from your 3DS. A new 'dsband' option should appear in the Homebrew Launcher.
 
 ## Instructions
 
