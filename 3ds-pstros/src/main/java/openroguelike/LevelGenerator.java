@@ -13,9 +13,9 @@ public class LevelGenerator {
      */
     private static final int END_GAME = 99;
     /**
-     * the initial kitten X and Y coordinates for the player in the town
+     * the initial cow X and Y coordinates for the player in the town
      */
-    private static final int KITTEN_POSITION = 17;
+    private static final int COW_POSITION = 17;
     private static final int MAX_RATIO = 10;
     private final Level level = new Level(this);
     private final Random random = new Random();
@@ -63,7 +63,8 @@ public class LevelGenerator {
         }
 
         if (levelType == Level.L_STATIC) {
-            level.moveTo('k', KITTEN_POSITION, KITTEN_POSITION);
+            // It's a cow in a ghost town.
+            level.moveTo('c', COW_POSITION, COW_POSITION);
         }
 
         firstStep = false;
