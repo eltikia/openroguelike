@@ -6,7 +6,7 @@ public class LevelGenerator {
     /**
      * the initial player X and Y coordinates for the player in the town
      */
-    public static final int PLAYER_POSITION = 16;
+    public static final int PLAYER_POSITION = 17;
     private static final int CAVE_RATIO = 9;
     /**
      * the last level
@@ -15,7 +15,7 @@ public class LevelGenerator {
     /**
      * the initial cow X and Y coordinates for the player in the town
      */
-    private static final int COW_POSITION = 17;
+    private static final int COW_POSITION = 18;
     private static final int MAX_RATIO = 10;
     private final Level level = new Level(this);
     private final Random random = new Random();

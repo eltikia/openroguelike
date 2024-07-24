@@ -3,7 +3,7 @@ package openroguelike;
 import nds.Console;
 
 public class Display {
-    private static final int COLUMNS_VISIBLE = 32;
+    private static final int COLUMNS_VISIBLE = 31;
     private final Player player;
     private final char[][] window = new char[Level.ROWS][Level.COLUMNS];
     /**
@@ -23,7 +23,6 @@ public class Display {
     public void clear() {
         offset = 0;
         playerMoved(true);
-        print();
     }
 
     /**
@@ -68,19 +67,43 @@ public class Display {
         for (int y = 0; y < Level.ROWS; y++) {
 
             for (int x = 0; x < Level.COLUMNS; x++) {
-                refresh(x, y);
+                tilePrint(x, y);
             }
 
         }
 
-        // Clear a possible bogus tile.
-        Console.setpos(0, Level.ROWS);
-        System.out.print(Tile.GLYPH_EMPTY);
+        Console.setpos(0, 0);
+        System.out.print(visibleTilesAsString());
+    }
+
+    private String visibleTilesAsString() {
+        StringBuffer visibleTiles = new StringBuffer();
+
+        for (int y = 0; y < Level.ROWS; y++) {
+
+            for (int x = 0; x <= COLUMNS_VISIBLE; x++) {
+                int xOffset = x + offset;
+
+                if (xOffset < window[y].length) {
+                    visibleTiles.append(window[y][xOffset]);
+                } else {
+                    visibleTiles.append(' ');
+                }
+
+            }
+
+        }
+
+        return visibleTiles.toString();
+    }
+
+    void tilePrint(int x, int y) {
+        Level level = player.getLevel();
+        tilePrint(level.getTile(x, y), x, y);
     }
 
     void refresh(int x, int y) {
-        Level level = player.getLevel();
-        tilePrint(level.getTile(x, y), x, y);
+        tilePrint(x, y);
         int xOffset = x - offset;
 
         if (xOffset >= 0 && xOffset <= COLUMNS_VISIBLE && x < window[y].length && y < Level.ROWS) {

@@ -14,7 +14,7 @@ public class Level {
      * level type: rooms
      */
     static final int L_ROOMS = 1;
-    static final int ROWS = 23;
+    static final int ROWS = 24;
     private final Tile[] tiles = new Tile[ROWS * COLUMNS];
     private final LevelGenerator factory;
 
