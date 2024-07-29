@@ -1,29 +1,30 @@
 package openroguelike;
 
-import java.util.Random;
-
 public class LevelGenerator {
     /**
      * the initial player X and Y coordinates for the player in the town
      */
     public static final int PLAYER_POSITION = 17;
-    private static final int CAVE_RATIO = 9;
+
     /**
      * the last level
      */
-    private static final int END_GAME = 99;
+    public static final int END_GAME = 99;
+
     /**
      * the initial cow X and Y coordinates for the player in the town
      */
     private static final int COW_POSITION = 18;
-    private static final int MAX_RATIO = 10;
-    private final Level level = new Level(this);
-    private final Random random = new Random();
+
     private int depth;
 
-    private boolean firstStep = true;
+    private final LevelProducer levelProducer;
 
-    public LevelGenerator() {
+    private Level townLevel;
+
+    public LevelGenerator(LevelProducer levelProducer) {
+        super();
+        this.levelProducer = levelProducer;
         generate();
     }
 
@@ -45,53 +46,30 @@ public class LevelGenerator {
         return canPlay;
     }
 
-    public void generate() {
+    public Level generate() {
+        Level level;
 
         if (depth == 0) {
-            generate(Level.L_STATIC);
+
+            if (townLevel == null) {
+                townLevel = new Level();
+                townLevel.generate(Level.L_STATIC);
+                // It's a cow in a ghost town.
+                townLevel.moveTo('c', COW_POSITION, COW_POSITION);
+                // It's a first step ever.
+                townLevel.moveTo(Player.GLYPH_PLAYER, PLAYER_POSITION, PLAYER_POSITION);
+            }
+
+            level = townLevel;
         } else {
-            generate(randPick());
+            level = levelProducer.generate(depth);
         }
 
-    }
-
-    private void generate(int levelType) {
-        level.generate(levelType);
-
-        if (firstStep) {
-            level.moveTo(Player.GLYPH_PLAYER, PLAYER_POSITION, PLAYER_POSITION);
-        }
-
-        if (levelType == Level.L_STATIC) {
-            // It's a cow in a ghost town.
-            level.moveTo('c', COW_POSITION, COW_POSITION);
-        }
-
-        firstStep = false;
+        return level;
     }
 
     public int getDepth() {
         return depth;
     }
 
-    public Level getLevel() {
-        return level;
-    }
-
-    public int getRandom(int bound) {
-        return Math.abs(random.nextInt()) % bound;
-    }
-
-    private int randPick() {
-        int x = getRandom(MAX_RATIO);
-        int levelType;
-
-        if (x < CAVE_RATIO) {
-            levelType = Level.L_CAVE;
-        } else {
-            levelType = Level.L_ROOMS;
-        }
-
-        return levelType;
-    }
 }

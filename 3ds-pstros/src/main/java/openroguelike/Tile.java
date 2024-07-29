@@ -29,11 +29,6 @@ public class Tile {
         this.coordinateY = coordinateY;
     }
 
-    void clear() {
-        type = GLYPH_EMPTY;
-        creature = null;
-    }
-
     public int getCoordinateX() {
         return coordinateX;
     }
@@ -68,5 +63,11 @@ public class Tile {
         }
 
         return canEnter && canStep;
+    }
+
+    public int manhattanDistance(Tile tile) {
+        int yDiff = coordinateY - tile.getCoordinateY();
+        int xDiff = coordinateX - tile.getCoordinateX();
+        return Math.abs(yDiff) + Math.abs(xDiff);
     }
 }

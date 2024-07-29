@@ -16,10 +16,10 @@ public class Level {
     static final int L_ROOMS = 1;
     static final int ROWS = 24;
     private final Tile[] tiles = new Tile[ROWS * COLUMNS];
-    private final LevelGenerator factory;
 
-    Level(LevelGenerator factory) {
-        this.factory = factory;
+    private Stairs stairs;
+
+    Level() {
 
         for (int y = 0; y < ROWS; y++) {
 
@@ -31,75 +31,30 @@ public class Level {
 
     }
 
-    private void addStair(char tileType) {
-        int x = factory.getRandom(COLUMNS);
-        int y = factory.getRandom(ROWS);
-
-        if (getTileType(x, y) == Tile.GLYPH_EMPTY) {
-            // tile type: empty
-            setTileType(x, y, tileType);
-        } else {
-            addStair(tileType);
-        }
-
-    }
-
-    void clear() {
-
-        for (int i = 0; i < tiles.length; i++) {
-            Tile tile = tiles[i];
-            tile.clear();
-        }
-
-    }
-
     void dig(int x, int y) {
         // tile type: empty
         setTileType(x, y, Tile.GLYPH_EMPTY);
     }
 
-    public Tile findTileOfType(char tileType) {
-        Tile tile = null;
-
-        for (int i = 0; i < tiles.length; i++) {
-            tile = tiles[i];
-
-            if (tileType == tile.getType()) {
-                break;
-            }
-
-        }
-
-        return tile;
-    }
-
     void generate(int levelType) {
-        clear();
 
         switch (levelType) {
             case L_CAVE:
                 Cave cave = new Cave(this);
                 cave.draw();
+                stairs = new Stairs(tiles);
                 break;
             case L_ROOMS:
                 Rooms rooms = new Rooms(this);
                 rooms.draw();
+                stairs = new Stairs(tiles);
                 break;
             case L_STATIC:
                 LevelStatic levelStatic = new LevelStatic(this);
-                levelStatic.draw();
+                stairs = levelStatic.draw();
                 break;
         }
 
-        if (levelType != L_STATIC) {
-            addStair(Tile.GLYPH_STAIRS_UP);
-            addStair(Tile.GLYPH_STAIRS_DOWN);
-        }
-
-    }
-
-    public LevelGenerator getFactory() {
-        return factory;
     }
 
     Tile getTile(int x, int y) {
@@ -151,6 +106,10 @@ public class Level {
             setTileType(x, Level.ROWS - 1, Tile.GLYPH_CAVE);
         }
 
+    }
+
+    public Stairs getStairs() {
+        return stairs;
     }
 
 }
