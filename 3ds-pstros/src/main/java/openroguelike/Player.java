@@ -1,5 +1,6 @@
 package openroguelike;
 
+import nds.Console;
 import nds.Key;
 import nds.Video;
 
@@ -11,10 +12,6 @@ public class Player {
     private final LevelGenerator factory;
 
     private final KeyPressed keyPressed;
-    /**
-     * the current level
-     */
-    private final Level level;
     /**
      * the current coordinate X
      */
@@ -29,12 +26,11 @@ public class Player {
 
     private final CowSay cowSay;
 
-    public Player(KeyPressed keyPressed) {
+    public Player(LevelProducer producer, KeyPressed keyPressed) {
         super();
         this.keyPressed = keyPressed;
-        factory = new LevelGenerator();
+        factory = new LevelGenerator(producer);
         cowSay = new CowSay(this);
-        level = factory.getLevel();
         display = new Display(this);
     }
 
@@ -47,7 +43,7 @@ public class Player {
     }
 
     public Level getLevel() {
-        return level;
+        return factory.generate();
     }
 
     private void handleDirections() {
@@ -71,11 +67,11 @@ public class Player {
     }
 
     private void handleStairs() {
+        Level level = getLevel();
         char type = level.getTileType(currentX, currentY);
         boolean comingUp = type == Tile.GLYPH_STAIRS_UP;
 
         if (type == Tile.GLYPH_STAIRS_DOWN || comingUp) {
-            LevelGenerator factory = level.getFactory();
 
             if (factory.changeLevel(comingUp)) {
                 handleStairs(comingUp);
@@ -88,22 +84,13 @@ public class Player {
     }
 
     private void handleStairs(boolean comingUp) {
-        level.clear();
-        display.clear();
-        LevelGenerator factory = level.getFactory();
-        factory.generate();
-        char wayBack;
-
-        if (comingUp) {
-            wayBack = Tile.GLYPH_STAIRS_DOWN;
-        } else {
-            wayBack = Tile.GLYPH_STAIRS_UP;
-        }
-
-        Tile tile = level.findTileOfType(wayBack);
-        tile.setCreature(new Character(GLYPH_PLAYER));
-        currentX = tile.getCoordinateX();
-        currentY = tile.getCoordinateY();
+        Console.cls();
+        Level level = factory.generate();
+        Stairs stairs = level.getStairs();
+        Tile wayBack = stairs.getWayBack(comingUp);
+        wayBack.setCreature(new Character(GLYPH_PLAYER));
+        currentX = wayBack.getCoordinateX();
+        currentY = wayBack.getCoordinateY();
         display.clear();
     }
 
@@ -113,6 +100,7 @@ public class Player {
     }
 
     private void moveTo(int nextX, int nextY) {
+        Level level = getLevel();
 
         if (level.moveTo(GLYPH_PLAYER, nextX, nextY)) {
             // Clean the previously occupied tile.

@@ -42,14 +42,13 @@ class Rooms {
             return;
         }
 
-        LevelGenerator factory = level.getFactory();
         int ly;
         int lx;
 
         if (dir == 1) {
             lx = minx;
             int bound = Math.max(1, y - miny);
-            ly = miny + factory.getRandom(bound);
+            ly = miny + RandomNumberGenerator.RANDOM.getRandom(bound);
 
             for (; lx < x; lx++) {
                 level.dig(lx, ly);
@@ -59,7 +58,7 @@ class Rooms {
         } else {
             int ten = tenPercentOf(x);
             ly = miny;
-            lx = ten + factory.getRandom(x - ten * 2);
+            lx = ten + RandomNumberGenerator.RANDOM.getRandom(x - ten * 2);
 
             for (; ly < y; ly++) {
                 level.dig(lx, ly);

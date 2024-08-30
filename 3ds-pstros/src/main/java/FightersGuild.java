@@ -4,13 +4,34 @@ import nds.Key;
 import openroguelike.*;
 
 public class FightersGuild implements KeyPressed {
+
+    private final LevelProducer levelProducer;
     private int keyPressed;
 
+    public FightersGuild(LevelProducer levelProducer) {
+        super();
+        this.levelProducer = levelProducer;
+    }
+
     public static void main(String[] args) {
+        // Start a level producer thread.
+        LevelProducer levelProducer = new LevelProducer();
         // Initialize the console, and play the game.
-        FightersGuild game = new FightersGuild();
-        game.initConsole();
-        game.play();
+        int status;
+
+        try {
+            FightersGuild game = new FightersGuild(levelProducer);
+            game.initConsole();
+            game.play();
+            status = 0;
+        } catch (Throwable e) {
+            Console.cls();
+            System.err.println("error: " + e.getMessage());
+            status = 1;
+        }
+
+        // Stop the level producer thread.
+        System.exit(status);
     }
 
     public int getKeyPressed() {
@@ -29,7 +50,7 @@ public class FightersGuild implements KeyPressed {
     }
 
     public void play() {
-        Player player = new Player(this);
+        Player player = new Player(levelProducer, this);
         Display display = player.getDisplay();
         display.clear();
 

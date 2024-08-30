@@ -72,8 +72,7 @@ class Cave {
     }
 
     private char randPick() {
-        LevelGenerator factory = level.getFactory();
-        int x = factory.getRandom(MAX_RATIO);
+        int x = RandomNumberGenerator.RANDOM.getRandom(MAX_RATIO);
         char tileType;
 
         if (x < WALL_RATIO) {
