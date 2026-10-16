@@ -17,6 +17,8 @@
 #ifndef WORLD_H__
 #define WORLD_H__
 
+#include <stdint.h>
+
 struct level;
 struct creature;
 
@@ -35,6 +37,8 @@ struct level *world_first(struct world *);
 struct level *world_prev(struct world *);
 struct level *world_next(struct world *);
 struct level *world_current(struct world *);
+struct level *world_peek_prev(struct world *);
+struct level *world_peek_next(struct world *);
 void world_level_gen(struct level *);
 
 #endif

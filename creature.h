@@ -30,9 +30,12 @@ enum race {
 struct creature {
 	int x;
 	int y;
+	int hp;
+	int maxhp;
 	int speed;
 	int actionpoints;
 	enum race race;
+	struct level *level;
 };
 
 int creature_move(struct creature *, struct level *, int, int);
@@ -47,9 +50,10 @@ int creature_move_downright(struct creature *, struct level *);
 int creature_climb_upstair(struct creature *, struct level *, struct level *);
 int creature_climb_downstair(struct creature *, struct level *, struct level *);
 int creature_rest(struct creature *);
+int creature_damroll(struct creature *, struct creature *);
 void creature_init(struct creature *, enum race);
-void creature_place_randomly(struct creature *, struct level *);
-void creature_place_at_stair(struct creature *, struct level *, bool);
+int creature_place_randomly(struct creature *, struct level *);
+int creature_place_at_stair(struct creature *, struct level *, bool);
 void creature_do_something(struct creature *, struct level *);
 
 #endif

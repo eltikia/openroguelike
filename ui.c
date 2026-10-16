@@ -68,7 +68,7 @@ ui_cleanup(void)
 }
 
 static void
-ui_tile_print(struct tile *t, int x, int y) {
+ui_tile_print(struct tile const *t, int x, int y) {
 	mvaddch(y, x, ui_tile_type_to_glyph(t->type));
 	if (NULL != t->creature) {
 		int glyph;
@@ -211,7 +211,7 @@ ui_menu_help(void)
 
 	exit = -1;
 	nonconfigurablekeys = 2;
-	helpwin = newwin(K__MAX - nonconfigurablekeys + 2, \
+	helpwin = newwin(K__MAX - nonconfigurablekeys + 3, \
 	    40, LINES / 2, COLS / 2 - 20);
 	wbkgd(helpwin, ' ' | COLOR_PAIR(4));
 	box(helpwin, 0, 0);
@@ -224,7 +224,8 @@ ui_menu_help(void)
 			mvwprintw(helpwin, i - nonconfigurablekeys + 1, 1, "%c %s", \
 			    keybindingsmap[i].key, keybindingsmap[i].name);
 		}
-		mvwprintw(helpwin, K__MAX + 1, 1, "Escape to quit this menu");
+		mvwprintw(helpwin, K__MAX - nonconfigurablekeys + 1, 1,
+		    "Escape to quit this menu");
 		wrefresh(helpwin);
 		key = keybinding_resolve(wgetch(helpwin));
 		if (key == K__MAX) {
@@ -461,7 +462,9 @@ log_debug(const char *str, ...)
 void
 log_close(void)
 {
-	(void)fclose(debug);
-	debug = NULL;
+	if (NULL != debug) {
+		(void)fclose(debug);
+		debug = NULL;
+	}
 }
 
