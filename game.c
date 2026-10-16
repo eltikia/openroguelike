@@ -43,16 +43,16 @@ static void usage(void);
 static const char *filename = ".roguelikerc";
 
 static int
-default_config_file(void) {
+default_config_file(const char *path) {
 	struct stat stbuf;
 	int success;
 
 	/* Check whether the .roguelikerc file exist. */
-	success = stat(filename, &stbuf);
+	success = stat(path, &stbuf);
 
 	if (success == -1) {
 		log_debug("--- Default configuration file ---\n");
-		log_debug("%s: %s\n", filename, strerror(errno));
+		log_debug("%s: %s\n", path, strerror(errno));
 		/* Colors are turned on by default. */
 		optionsmap[O_COLORS].value = true;
 	}
@@ -78,7 +78,10 @@ config_file_read(const char *configfile)
 		char *linep, *key, *value;
 		int found = 0;
 
-		line[linelen - 1] = '\0';
+		if (linelen > 0 && '\n' == line[linelen - 1]) {
+			line[--linelen] = '\0';
+		}
+
 		linep = line;
 		if ('#' == linep[0])
 			continue;
@@ -90,8 +93,7 @@ config_file_read(const char *configfile)
 		key = strsep(&linep, ":");
 		if (NULL == linep) {
 			log_debug("bad line -- %s\n", line);
-			free(line);
-			return(-1);
+			goto fail;
 		}
 		value = linep;
 		while (' ' == value[0] || '\t' == value[0]) {
@@ -108,8 +110,7 @@ config_file_read(const char *configfile)
 			} else {
 				log_debug("option %s has wrong value -- %s\n",
 				    key, value);
-				free(line);
-				return(-1);
+				goto fail;
 			}
 			found = 1;
 			log_debug("Found option %s=%s\n", key, value);
@@ -124,27 +125,31 @@ config_file_read(const char *configfile)
 			if (strlen(value) > 1) {
 				log_debug("key %s has wrong value -- %s\n",
 				    key, value);
-				free(line);
-				return(-1);
+				goto fail;
 			}
 			keybindingsmap[i].key = value[0];
 		}
 	}
+	fclose(s);
 	free(line);
 	line = NULL;
 	return(0);
+fail:
+	fclose(s);
+	free(line);
+	return(-1);
 }
 
 int
 main(int argc, char *argv[])
 {
-	int		 ch, is_running;
+	int		 ch, is_running, rc;
 	bool		 debug = false;
 	uint32_t	 seed;
 	glob_t		 gl;
 	char		 path[PATH_MAX];
 	struct creature	 p;
-	struct world	 w;
+	struct world	 w = {0};
 	char		*configfile = NULL;
 	const char	*errstr;
 	struct level	*lp;
@@ -177,23 +182,35 @@ main(int argc, char *argv[])
 	}
 
 	if (NULL == configfile) {
+		pw = getpwuid(getuid());
 
-		if (default_config_file() == 0) {
-			pw = getpwuid(getuid());
-			snprintf(path, sizeof(path), "%s/%s", pw->pw_dir, filename);
+		if (pw == NULL) {
+			optionsmap[O_COLORS].value = true;
+		} else {
+			snprintf(path, sizeof(path), "%s/%s", pw->pw_dir,
+			    filename);
 
-			if (-1 == config_file_read(path)) {
-				goto exit;
+			if (default_config_file(path) == 0) {
+				if (-1 == config_file_read(path)) {
+					goto exit;
+				}
+
 			}
 
 		}
 
 	} else {
 #ifdef GLOB_TILDE
-		glob(configfile, GLOB_NOCHECK | GLOB_TILDE, NULL, &gl);
+		rc = glob(configfile, GLOB_NOCHECK | GLOB_TILDE, NULL, &gl);
 #else
-		glob(configfile, GLOB_NOCHECK, NULL, &gl);
+		rc = glob(configfile, GLOB_NOCHECK, NULL, &gl);
 #endif
+		if (0 != rc || 0 == gl.gl_pathc || NULL == gl.gl_pathv) {
+			globfree(&gl);
+			warnx("%s: not found", configfile);
+			goto exit;
+		}
+
 		snprintf(path, sizeof(path), "%s", gl.gl_pathv[0]);
 		globfree(&gl);
 
@@ -209,7 +226,7 @@ main(int argc, char *argv[])
 	log_debug("--- ui ---\n");
 	ui_init();
 	/* Check for 23 because of ripoffline */
-	if ((ui_get_lines() < 23) || (ui_get_cols() < 80)) {
+	if ((ui_get_lines() < MAXROWS) || (ui_get_cols() < MAXCOLS)) {
 		ui_cleanup();
 		fprintf(stderr, "must be displayed on 80x24 screen.");
 		fprintf(stderr, "LINES: %i, COLS: %i\n",
@@ -244,7 +261,13 @@ main(int argc, char *argv[])
 			if (-1 != is_running) {
 				key = is_running;
 			} else {
-				key = keybinding_resolve(ui_get_input());
+				int input = ui_get_input();
+
+				if (-1 == input) {
+					goto exit;
+				}
+
+				key = keybinding_resolve(input);
 			}
 			if (key == K__MAX) {
 				continue;
@@ -303,12 +326,18 @@ main(int argc, char *argv[])
 					noaction = -1;
 					break;
 				}
-				noaction = creature_climb_upstair(&p, lp, world_prev(&w));
-				lp = world_current(&w);
+				noaction = creature_climb_upstair(&p, lp, world_peek_prev(&w));
+
+				if (noaction == 0) {
+					lp = world_prev(&w);
+				}
+
 				break;
 			case K_DOWNSTAIR:
-				noaction = creature_climb_downstair(&p, lp, world_next(&w));
-				lp = world_current(&w);
+				noaction = creature_climb_downstair(&p, lp,
+				    world_peek_next(&w));
+				if (0 == noaction)
+					lp = world_next(&w);
 				break;
 			case K_REST:
 				noaction = creature_rest(&p);
@@ -350,11 +379,17 @@ main(int argc, char *argv[])
 			struct creature *c;
 
 			c = w.creatures[i];
+			if (c->level == NULL) {
+				continue;
+			}
 			c->actionpoints += c->speed;
 			while (c->actionpoints >= 5) {
-				creature_do_something(c, world_first(&w));
+				creature_do_something(c, c->level);
 				c->actionpoints -= 5;
 			}
+		}
+		if (p.hp <= 0) {
+			goto exit;
 		}
 		/* Add a slight delay when running */
 		if (-1 != is_running) {
@@ -367,6 +402,7 @@ exit:
 	}
 	world_free(&w);
 	ui_cleanup();
+	puts("Goodbye, player!");
 	return(0);
 }
 

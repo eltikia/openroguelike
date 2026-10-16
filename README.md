@@ -41,6 +41,12 @@ Others:
 * `O`: open options menu ;
 * `CTRL-C`: quit.
 
+## Rules of this roguelike
+
+* Kill goblin by stepping onto it.
+* Goblins behave aggressively when approached.
+* Rest to recover hit points.
+
 ## License
 
 All the code is licensed under the ISC License.

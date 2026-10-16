@@ -135,6 +135,7 @@ HAVE_ARC4RANDOM=
 HAVE_ERR=
 HAVE_GETPROGNAME=
 HAVE_PROGRAM_INVOCATION_SHORT_NAME=
+HAVE_REALLOCARRAY=
 HAVE_STRTONUM=
 HAVE___PROGNAME=
 
@@ -245,6 +246,7 @@ runtest arc4random	ARC4RANDOM			  || true
 runtest err		ERR				  || true
 runtest getprogname	GETPROGNAME			  || true
 runtest program_invocation_short_name	PROGRAM_INVOCATION_SHORT_NAME || true
+runtest reallocarray	REALLOCARRAY			  || true
 runtest strtonum	STRTONUM			  || true
 runtest __progname	__PROGNAME			  || true
 
@@ -291,6 +293,7 @@ cat << __HEREDOC__
 #define HAVE_ERR ${HAVE_ERR}
 #define HAVE_GETPROGNAME ${HAVE_GETPROGNAME}
 #define HAVE_PROGRAM_INVOCATION_SHORT_NAME ${HAVE_PROGRAM_INVOCATION_SHORT_NAME}
+#define HAVE_REALLOCARRAY ${HAVE_REALLOCARRAY}
 #define HAVE_STRTONUM ${HAVE_STRTONUM}
 #define HAVE___PROGNAME ${HAVE___PROGNAME}
 __HEREDOC__
@@ -308,6 +311,10 @@ fi
 
 if [ ${HAVE_GETPROGNAME} -eq 0 ]; then
 	echo "extern const char *getprogname(void);"
+fi
+if [ ${HAVE_REALLOCARRAY} -eq 0 ]; then
+	echo "#include <stddef.h>"
+	echo "extern void *reallocarray(void *, size_t, size_t);"
 fi
 if [ ${HAVE_STRTONUM} -eq 0 ]; then
 	echo "extern long long strtonum(const char *, long long, long long, const char **);"

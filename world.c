@@ -27,6 +27,8 @@
 
 #define ENTRY_MSG	"You enter the Goblin's Caves"
 #define END_MSG		"Unwelcome to the Hall of the Goblin King"
+#define GOBLINS_PER_LEVEL	3
+#define MAZE_RATIO			20
 
 void world_level_gen(struct level *l) {
 	int levelType = rng_rand_uniform(100);
@@ -34,7 +36,7 @@ void world_level_gen(struct level *l) {
 	do {
 		level_init(l);
 
-		if (levelType < 20) {
+		if (levelType < MAZE_RATIO) {
 			maze_gen(l);
 		} else {
 			cave_gen(l);
@@ -49,7 +51,7 @@ world_init(struct world *w)
 {
 	w->current = 0;
 	w->levelsz = 5;
-	w->creaturesz = 3;
+	w->creaturesz = GOBLINS_PER_LEVEL * w->levelsz;
 	w->levels = calloc(w->levelsz, sizeof(struct level *));
 	/* The first level is the fixed entrance */
 	log_debug("Generate the first level\n");
@@ -69,18 +71,27 @@ world_init(struct world *w)
 	/* The final level is the fixed hall room of Goblin King */
 	log_debug("Generate the Goblin King's room\n");
 	w->levels[w->levelsz - 1] = calloc(1, sizeof(struct level));
-	level_init(w->levels[w->levelsz - 1]);
-	cave_gen(w->levels[w->levelsz - 1]);
+
+	do {
+		level_init(w->levels[w->levelsz - 1]);
+		cave_gen(w->levels[w->levelsz - 1]);
+		level_load(w->levels[w->levelsz - 1], "misc/hall");
+	} while (-1 == level_add_stairs(w->levels[w->levelsz - 1], true, false));
+
 	w->levels[w->levelsz - 1]->entrymessage = (char *)END_MSG;
-	level_load(w->levels[w->levelsz - 1], "misc/hall");
-	level_add_stairs(w->levels[w->levelsz - 1], true, false);
 
 	log_debug("--- creature (goblins) ---\n");
 	w->creatures = calloc(w->creaturesz, sizeof(struct creature *));
 	for (int32_t i = 0; i < w->creaturesz; i++) {
+		int32_t level = i / GOBLINS_PER_LEVEL;
 		w->creatures[i] = calloc(1, sizeof(struct creature));
 		creature_init(w->creatures[i], R_GOBLIN);
-		creature_place_randomly(w->creatures[i], w->levels[0]);
+
+		if (creature_place_randomly(w->creatures[i],
+		    w->levels[level]) == -1) {
+			log_debug("level %i unavailable for goblins\n", level);
+		}
+
 	}
 }
 
@@ -112,6 +123,22 @@ world_current(struct world *w)
 	return w->levels[w->current];
 }
 
+struct level *
+world_peek_prev(struct world *w)
+{
+	if (w->current - 1 >= 0)
+		return w->levels[w->current - 1];
+	return world_current(w);
+}
+
+struct level *
+world_peek_next(struct world *w)
+{
+	if (w->current + 1 < w->levelsz)
+		return w->levels[w->current + 1];
+	return world_current(w);
+}
+
 void
 world_free(struct world *w)
 {
@@ -122,6 +149,13 @@ world_free(struct world *w)
 	free(w->levels);
 	w->levels = NULL;
 	w->levelsz = 0;
+	for (int32_t i = 0; i < w->creaturesz; i++) {
+		free(w->creatures[i]);
+		w->creatures[i] = NULL;
+	}
+	free(w->creatures);
+	w->creatures = NULL;
+	w->creaturesz = 0;
 	w->current = -1;
 }
 
