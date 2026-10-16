@@ -71,7 +71,7 @@ string_to_coordinate(char *src, struct coordinate *c)
 }
 
 bool
-tile_is_empty(struct tile *t) {
+tile_is_empty(struct tile const *t) {
 	if ((T_EMPTY == t->type || T_UPSTAIR == t->type
 	    || T_DOWNSTAIR == t->type) && NULL == t->creature)
 		return(true);
@@ -79,7 +79,7 @@ tile_is_empty(struct tile *t) {
 }
 
 bool
-tile_is_wall(struct tile *t) {
+tile_is_wall(struct tile const *t) {
 	if (T_WALL == t->type)
 		return(true);
 	return(false);
@@ -127,9 +127,13 @@ level_load(struct level *l, const char *filename)
 		int		 y;
 		char		*linep, *key, *value;
 
-		line[linelen - 1] = '\0';
+		if (linelen > 0 && '\n' == line[linelen - 1])
+			line[--linelen] = '\0';
+
 		linep = line;
-		if (strsep(&linep, ":") == NULL) {
+
+		(void)strsep(&linep, ":");
+		if (NULL == linep) {
 			errstr = "malformed line";
 			goto closeclean;
 		}
@@ -184,16 +188,32 @@ level_load(struct level *l, const char *filename)
 				    " before \"map\"";
 				goto closeclean;
 			}
+
+			if (position.y + size.y > MAXROWS
+			    || position.x + size.x > MAXCOLS) {
+				errstr = "invalid map size";
+				goto closeclean;
+			}
+
 			y = position.y;
 			linez = 0;
 			linelen = 0;
+			free(line);
 			line = NULL;
 			while (-1 != (linelen = getline(&line, &linez, s))) {
-				if (linelen - 1 != size.x) {
+
+				if (linelen > 0 && '\n' == line[linelen - 1]) {
+					line[--linelen] = '\0';
+				}
+
+				if (linelen != size.x) {
 					errstr = "bad value for size.x";
 					goto closeclean;
 				}
-				line[linelen - 1] = '\0';
+				if (y >= position.y + size.y) {
+					errstr = "bad number of lines for \"size\"";
+					goto closeclean;
+				}
 				for (int x = 0; x < size.x; x++) {
 					int lx;
 
@@ -250,6 +270,7 @@ level_add_stairs(struct level *l, bool build_upstair, bool build_downstair)
 {
 	struct coordinate upstair, downstair;
 	struct coordinate existing_upstair, existing_downstair;
+	bool success = false;
 	int count = 0;
 
 	coordinate_init(&existing_upstair);
@@ -298,9 +319,10 @@ level_add_stairs(struct level *l, bool build_upstair, bool build_downstair)
 			l->tile[upstair.y][upstair.x].type = T_UPSTAIR;
 		if (build_downstair)
 			l->tile[downstair.y][downstair.x].type = T_DOWNSTAIR;
+		success = true;
 		break;
 	} while (count < 50);
-	if (count == 50) {
+	if (!success) {
 		log_debug("Can't generate stairs for this level\n");
 		return(-1);
 	}

@@ -85,16 +85,12 @@ coordqueue_grow(struct coordqueue *cq)
 
 	queuez = cq->queuez + 50;
 	tempq = reallocarray(cq->queue, queuez, sizeof(struct coordinate));
-	tempcounter = reallocarray(cq->counter, queuez, sizeof(int));
-	if (NULL == tempq) {
-		free(cq->queue);
-		free(cq->counter);
-		cq->queue = NULL;
-		cq->counter = NULL;
-		cq->queuez = -1;
+	if (NULL == tempq)
 		return(-1);
-	}
 	cq->queue = tempq;
+	tempcounter = reallocarray(cq->counter, queuez, sizeof(int));
+	if (NULL == tempcounter)
+		return(-1);
 	cq->counter = tempcounter;
 	for (size_t i = cq->queuez; i < queuez; i++) {
 		cq->queue[i].y = -1;
@@ -116,9 +112,9 @@ coordqueue_add(struct coordqueue *cq, int y, int x, int counter)
 			return(0);
 		}
 	}
-	coordqueue_grow(cq);
-	coordqueue_add(cq, y, x, counter);
-	return(-1);
+	if (-1 == coordqueue_grow(cq))
+		return(-1);
+	return(coordqueue_add(cq, y, x, counter));
 }
 
 int
@@ -127,7 +123,12 @@ coordqueue_init(struct coordqueue *cq)
 	cq->queuez = 50;
 	cq->queue = reallocarray(NULL, cq->queuez, sizeof(struct coordinate));
 	cq->counter = reallocarray(NULL, cq->queuez, sizeof(int));
-	if (NULL == cq->queue) {
+	if (NULL == cq->queue || NULL == cq->counter) {
+		free(cq->queue);
+		free(cq->counter);
+		cq->queue = NULL;
+		cq->counter = NULL;
+		cq->queuez = 0;
 		return(-1);
 	}
 	for (size_t i = 0; i < cq->queuez; i++) {
@@ -145,7 +146,7 @@ coordqueue_free(struct coordqueue *cq)
 	free(cq->counter);
 	cq->queue = NULL;
 	cq->counter = NULL;
-	cq->queuez = -1;
+	cq->queuez = 0;
 }
 
 bool
@@ -161,7 +162,8 @@ are_coordinate_reachable(struct level *l, struct coordinate *start, struct coord
 	 * the screen, is a wall or other unreachable type, or if a shorter path
 	 * a already been found.
 	 */
-	coordqueue_init(&cq);
+	if (-1 == coordqueue_init(&cq))
+		return(false);
 	coordqueue_add(&cq, start->y, start->x, 0);
 
 	for (int elem = 0; elem < coordqueue_size(&cq); elem++) {
@@ -179,27 +181,27 @@ are_coordinate_reachable(struct level *l, struct coordinate *start, struct coord
 		    && -1 == coordqueue_exists(&cq, y - 1, x, counter)) {
 			coordqueue_add(&cq, y - 1, x, counter);
 		}
-		if (0 != y && MAXCOLS != x
+		if (0 != y && MAXCOLS - 1 != x
 		    && tile_is_empty(&(l->tile[y - 1][x + 1]))
 		    && -1 == coordqueue_exists(&cq, y - 1, x + 1, counter)) {
 			coordqueue_add(&cq, y - 1, x + 1, counter);
 		}
-		if (MAXCOLS != x
+		if (MAXCOLS - 1 != x
 		    && tile_is_empty(&(l->tile[y][x + 1]))
 		    && -1 == coordqueue_exists(&cq, y, x + 1, counter)) {
 			coordqueue_add(&cq, y, x + 1, counter);
 		}
-		if (MAXROWS != y && MAXCOLS != x
+		if (MAXROWS - 1 != y && MAXCOLS - 1 != x
 		    && tile_is_empty(&(l->tile[y + 1][x + 1]))
 		    && -1 == coordqueue_exists(&cq, y + 1, x + 1, counter)) {
 			coordqueue_add(&cq, y + 1, x + 1, counter);
 		}
-		if (MAXROWS != y
+		if (MAXROWS - 1 != y
 		    && tile_is_empty(&(l->tile[y + 1][x]))
 		    && -1 == coordqueue_exists(&cq, y + 1, x, counter)) {
 			coordqueue_add(&cq, y + 1, x, counter);
 		}
-		if (MAXROWS != y && 0 != x
+		if (MAXROWS - 1 != y && 0 != x
 		    && tile_is_empty(&(l->tile[y + 1][x - 1]))
 		    && -1 == coordqueue_exists(&cq, y + 1, x - 1, counter)) {
 			coordqueue_add(&cq, y + 1, x - 1, counter);
